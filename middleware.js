@@ -1,24 +1,29 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs";
+import { clerkMiddleware } from "@clerk/nextjs";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/resume(.*)",
-  "/interview(.*)",
-  "/ai-cover-letter(.*)",
-  "/onboarding(.*)",
-  "/sheetprep/company(.*)",
-  "/notes(.*)",
-  "/core(.*)",
-  "/roadmap(.*)",
-  "/ats(.*)",
-]);
+const protectedRoutes = [
+  "/dashboard",
+  "/resume",
+  "/interview",
+  "/ai-cover-letter",
+  "/onboarding",
+  "/sheetprep/company",
+  "/notes",
+  "/core",
+  "/roadmap",
+  "/ats",
+];
+
+function isProtectedRoute(pathname) {
+  return protectedRoutes.some(route => pathname.startsWith(route));
+}
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
+  const pathname = req.nextUrl.pathname;
 
-  if (!userId && isProtectedRoute(req)) {
+  if (!userId && isProtectedRoute(pathname)) {
     const { redirectToSignIn } = await auth();
     return redirectToSignIn();
   }
