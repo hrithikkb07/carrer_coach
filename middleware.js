@@ -1,4 +1,4 @@
-import { clerkMiddleware } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
@@ -19,17 +19,22 @@ function isProtectedRoute(pathname) {
   return protectedRoutes.some(route => pathname.startsWith(route));
 }
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
+export async function middleware(req) {
   const pathname = req.nextUrl.pathname;
 
-  if (!userId && isProtectedRoute(pathname)) {
-    const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+  if (isProtectedRoute(pathname)) {
+    try {
+      const { userId } = await auth();
+      if (!userId) {
+        return NextResponse.redirect(new URL("/sign-in", req.url));
+      }
+    } catch {
+      return NextResponse.redirect(new URL("/sign-in", req.url));
+    }
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
@@ -37,6 +42,3 @@ export const config = {
     "/(api|trpc)(.*)",
   ],
 };
-
-// 🔥 IMPORTANT: Fix for Vercel Edge error
-export const runtime = "nodejs";
