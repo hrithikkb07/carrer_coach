@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { clerkMiddleware, auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // Routes that require authentication
@@ -19,22 +19,15 @@ function isProtectedRoute(pathname) {
   return protectedRoutes.some(route => pathname.startsWith(route));
 }
 
-export async function middleware(req) {
+export default clerkMiddleware(async (auth, req) => {
   const pathname = req.nextUrl.pathname;
 
   if (isProtectedRoute(pathname)) {
-    try {
-      const { userId } = await auth();
-      if (!userId) {
-        return NextResponse.redirect(new URL("/sign-in", req.url));
-      }
-    } catch {
-      return NextResponse.redirect(new URL("/sign-in", req.url));
-    }
+    await auth.protect();
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: [
